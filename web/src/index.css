@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+/* Leaflet dark-mode tile tinting (Tailwind v4 `dark:` is media-query based) */
+@media (prefers-color-scheme: dark) {
+  .leaflet-container {
+    background: #0f172a;
+  }
+  .leaflet-tile {
+    filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+  }
+  .leaflet-bar a {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-bottom: 1px solid #334155;
+  }
+  .leaflet-tooltip {
+    background: #1e293b;
+    color: #f1f5f9;
+    border-color: #334155;
+  }
+}
+
+/* Native-y scrollbars for the notification / feed panels */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.4);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
