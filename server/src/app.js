@@ -32,6 +32,9 @@ export function createApp() {
         if (!origin || env.frontendUrl.includes(origin)) return cb(null, true);
         return cb(null, false);
       },
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
     }),
   );
 
