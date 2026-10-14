@@ -50,8 +50,10 @@ export const env = {
   emailEncryptionKey: process.env.EMAIL_ENCRYPTION_KEY,
 
   // Comma-separated list of allowed CORS origins.
+  // Strip trailing slashes — browsers send origins without them, so a
+  // misconfigured env var like "https://example.com/" must still match.
   frontendUrl: process.env.FRONTEND_URL
-    ? process.env.FRONTEND_URL.split(',').map((s) => s.trim()).filter(Boolean)
+    ? process.env.FRONTEND_URL.split(',').map((s) => s.trim().replace(/\/+$/, '')).filter(Boolean)
     : ['http://localhost:5173', 'http://localhost:3000'],
 
   cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME,
