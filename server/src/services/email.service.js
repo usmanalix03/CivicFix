@@ -15,24 +15,35 @@ async function sendViaResend({ to, subject, html, text }) {
     logger.warn('[resend] RESEND_API_KEY not set — email skipped.');
     return { mocked: true };
   }
-  const { data } = await axios.post(
-    'https://api.resend.com/emails',
-    {
-      from: `${env.emailFromName} <onboarding@resend.dev>`,
-      to,
-      subject,
-      html,
-      text,
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+  try {
+    const { data } = await axios.post(
+      'https://api.resend.com/emails',
+      {
+        from: `${env.emailFromName} <onboarding@resend.dev>`,
+        to,
+        subject,
+        html,
+        text,
       },
-      timeout: 15_000,
-    },
-  );
-  return data;
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 15_000,
+      },
+    );
+    return data;
+  } catch (err) {
+    const status = err.response?.status;
+    const message = err.response?.data?.message || err.message;
+    logger.error(`[resend] Delivery failed (HTTP ${status ?? 'N/A'}): ${message}`);
+    // Never leak Resend's raw status (e.g. 403 bad key) — return 502 instead.
+    throw Object.assign(new Error('Email delivery failed. Please try again later.'), {
+      status: 502,
+      isOperational: true,
+    });
+  }
 }
 
 
