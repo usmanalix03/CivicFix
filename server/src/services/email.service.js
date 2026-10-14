@@ -9,25 +9,38 @@ import { decryptEmail } from './encryption.service.js';
  * Nodemailer + Gmail SMTP is NOT used because Render free tier blocks
  * outbound SMTP ports 465 and 587.
  */
-async function sendViaResend({ to, subject, html, text }) {
-  const apiKey = process.env.RESEND_API_KEY;
+/**
+ * Sends an email via Brevo (formerly Sendinblue) HTTP API.
+ * Brevo free tier: 300 emails/day, send to ANY recipient — no domain needed.
+ * Just verify your sender email address in the Brevo dashboard.
+ *
+ * Resend was replaced because its free tier only allows sending to the
+ * account owner's email address (403 for all other recipients).
+ */
+async function sendViaBrevo({ to, subject, html, text }) {
+  const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey) {
-    logger.warn('[resend] RESEND_API_KEY not set — email skipped.');
+    logger.warn('[brevo] BREVO_API_KEY not set — email skipped.');
+    return { mocked: true };
+  }
+  const senderEmail = env.systemEmail;
+  if (!senderEmail) {
+    logger.warn('[brevo] SYSTEM_EMAIL not set — email skipped.');
     return { mocked: true };
   }
   try {
     const { data } = await axios.post(
-      'https://api.resend.com/emails',
+      'https://api.brevo.com/v3/smtp/email',
       {
-        from: `${env.emailFromName} <onboarding@resend.dev>`,
-        to,
+        sender: { name: env.emailFromName, email: senderEmail },
+        to: [{ email: to }],
         subject,
-        html,
-        text,
+        htmlContent: html,
+        textContent: text,
       },
       {
         headers: {
-          Authorization: `Bearer ${apiKey}`,
+          'api-key': apiKey,
           'Content-Type': 'application/json',
         },
         timeout: 15_000,
@@ -37,8 +50,7 @@ async function sendViaResend({ to, subject, html, text }) {
   } catch (err) {
     const status = err.response?.status;
     const message = err.response?.data?.message || err.message;
-    logger.error(`[resend] Delivery failed (HTTP ${status ?? 'N/A'}): ${message}`);
-    // Never leak Resend's raw status (e.g. 403 bad key) — return 502 instead.
+    logger.error(`[brevo] Delivery failed (HTTP ${status ?? 'N/A'}): ${message}`);
     throw Object.assign(new Error('Email delivery failed. Please try again later.'), {
       status: 502,
       isOperational: true,
@@ -93,8 +105,8 @@ export async function sendEmail({ to, subject, preheader = '', body, code = null
     return { mocked: true };
   }
 
-  const info = await sendViaResend({ to, subject, html, text });
-  logger.info(`Email sent to ${to} via Resend`);
+  const info = await sendViaBrevo({ to, subject, html, text });
+  logger.info(`Email sent to ${to} via Brevo`);
   return info;
 }
 
