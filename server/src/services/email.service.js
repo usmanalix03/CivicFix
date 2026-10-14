@@ -1,19 +1,40 @@
-import nodemailer from 'nodemailer';
+import axios from 'axios';
 import { env } from '../config/env.js';
 import { logger } from '../config/logger.js';
 import { decryptEmail } from './encryption.service.js';
 
-// Port 465 (SMTPS) is blocked on Render free tier — use 587 (STARTTLS) instead.
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,       // STARTTLS — upgraded after connection
-  requireTLS: true,    // Refuse to send if TLS upgrade fails
-  auth: {
-    user: env.systemEmail,
-    pass: env.systemEmailPassword,
-  },
-});
+/**
+ * Sends an email via Resend HTTP API (https://resend.com).
+ * Resend uses port 443 (HTTPS) — never blocked by cloud providers.
+ * Nodemailer + Gmail SMTP is NOT used because Render free tier blocks
+ * outbound SMTP ports 465 and 587.
+ */
+async function sendViaResend({ to, subject, html, text }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    logger.warn('[resend] RESEND_API_KEY not set — email skipped.');
+    return { mocked: true };
+  }
+  const { data } = await axios.post(
+    'https://api.resend.com/emails',
+    {
+      from: `${env.emailFromName} <onboarding@resend.dev>`,
+      to,
+      subject,
+      html,
+      text,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      timeout: 15_000,
+    },
+  );
+  return data;
+}
+
 
 const layout = ({ preheader, title, body, code }) => `
 <!DOCTYPE html>
@@ -54,21 +75,15 @@ const layout = ({ preheader, title, body, code }) => `
 
 export async function sendEmail({ to, subject, preheader = '', body, code = null }) {
   const html = layout({ preheader, title: subject, body, code });
+  const text = body.replace(/<[^>]+>/g, '') + (code ? `\n\nCode: ${code}` : '');
 
   if (!env.emailEnabled) {
     logger.warn(`[email:disabled] would send "${subject}" to ${to} (code: ${code || 'n/a'})`);
     return { mocked: true };
   }
 
-  const info = await transporter.sendMail({
-    from: `"${env.emailFromName}" <${env.systemEmail}>`,
-    to,
-    subject,
-    html,
-    text: body.replace(/<[^>]+>/g, '') + (code ? `\n\nCode: ${code}` : ''),
-  });
-
-  logger.info(`Email sent to ${to} (${info.messageId})`);
+  const info = await sendViaResend({ to, subject, html, text });
+  logger.info(`Email sent to ${to} via Resend`);
   return info;
 }
 
