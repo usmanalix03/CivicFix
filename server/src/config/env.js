@@ -38,8 +38,9 @@ export const env = {
   port: int(process.env.PORT, 5000),
 
   databaseUrl: process.env.DATABASE_URL,
-  dbPoolMax: int(process.env.DB_POOL_MAX, 20),
-  dbPoolMin: int(process.env.DB_POOL_MIN, 2),
+  // Neon free tier allows ≤ 5 simultaneous connections; keep the default safe.
+  dbPoolMax: int(process.env.DB_POOL_MAX, 5),
+  dbPoolMin: int(process.env.DB_POOL_MIN, 1),
 
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '30d',

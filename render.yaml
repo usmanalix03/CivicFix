@@ -1,0 +1,45 @@
+services:
+  - type: web
+    name: civicfix-server
+    runtime: node
+    region: oregon           # closest free-tier region; change to suit
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "5000"
+      # All secrets below must be added via the Render dashboard → Environment tab.
+      # Do NOT hard-code real values here.
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: TURNSTILE_SECRET_KEY
+        sync: false
+      - key: SYSTEM_EMAIL
+        sync: false
+      - key: SYSTEM_EMAIL_PASSWORD
+        sync: false
+      - key: SUPER_ADMIN_EMAIL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false          # Set to your Vercel deployment URL
+      - key: TURNSTILE_DEV_BYPASS
+        value: "false"
+      - key: EMAIL_ENABLED
+        value: "true"
+      - key: DB_POOL_MAX
+        value: "5"
+      - key: DB_POOL_MIN
+        value: "1"

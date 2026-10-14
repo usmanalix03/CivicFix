@@ -9,6 +9,9 @@ web/.vite/
 server/.env
 .env
 .env.*
+# Allow example templates to be committed
+!.env.example
+!**/.env.example
 
 # Logs
 *.log

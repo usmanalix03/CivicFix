@@ -3,12 +3,20 @@ import { env } from './env.js';
 
 const { Pool } = pg;
 
+// Neon (and most managed Postgres providers) require SSL.
+// We detect Neon URLs automatically; you can also force via DATABASE_SSL=true.
+const isNeon = env.databaseUrl?.includes('neon.tech');
+const requireSsl = isNeon || process.env.DATABASE_SSL === 'true';
+
 export const pool = new Pool({
   connectionString: env.databaseUrl,
   max: env.dbPoolMax,
   min: env.dbPoolMin,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 5_000,
+  // Neon free tier: always use SSL; rejectUnauthorized=false avoids self-signed
+  // cert issues common in managed serverless Postgres offerings.
+  ...(requireSsl ? { ssl: { rejectUnauthorized: false } } : {}),
 });
 
 pool.on('error', (err) => {
