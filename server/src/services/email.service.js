@@ -3,10 +3,12 @@ import { env } from '../config/env.js';
 import { logger } from '../config/logger.js';
 import { decryptEmail } from './encryption.service.js';
 
+// Port 465 (SMTPS) is blocked on Render free tier — use 587 (STARTTLS) instead.
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
+  port: 587,
+  secure: false,       // STARTTLS — upgraded after connection
+  requireTLS: true,    // Refuse to send if TLS upgrade fails
   auth: {
     user: env.systemEmail,
     pass: env.systemEmailPassword,
